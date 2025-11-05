@@ -5,6 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Assistant Search</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FIX: Moved Tailwind config script here so it runs before the body content loads. -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-dark': '#8c82ff',
+                        'secondary-dark': '#6ee7b7',
+                        'accent-dark': '#60a5fa',
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -247,22 +263,6 @@
 </head>
 <body>
 
-    
-
-<script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'primary-dark': '#8c82ff',
-                        'secondary-dark': '#6ee7b7',
-                        'accent-dark': '#60a5fa',
-                    }
-                }
-            }
-        }
-    </script>
-
     <!-- About Modal (New) -->
     <div id="aboutModalOverlay" class="about-modal-overlay" onclick="hideAboutUsModal()">
         <div class="about-modal-content" onclick="event.stopPropagation()">
@@ -376,8 +376,7 @@
     </div>
 
     
-
-<script>
+    <script>
         // --- Global Variables/Constants ---
         const MODEL_NAME = "gemini-2.5-flash-preview-09-2025";
         const API_URL_BASE = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent`;
