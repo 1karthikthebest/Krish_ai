@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000; /* Pure black background */
+            color: #e0e0e0; /* Light gray text */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Prevent body scroll when menu is open */
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background-color: #000000;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative; /* Needed for absolute positioning of the title */
+        }
+
+        /* Main Content Area: Now flows top-to-bottom */
+        .content-area {
+            flex-grow: 1;
+            padding: 1rem;
+            overflow-y: auto; /* THIS enables vertical scrolling when content overflows */
+            -webkit-overflow-scrolling: touch;
+            display: flex;
+            flex-direction: column; /* Standard chat flow: top to bottom */
+        }
+
+        /* Input Bar at Bottom */
+        .input-bar {
+            background-color: #1a1a1a;
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            border-top-left-radius: 2rem;
+            border-top-right-radius: 2rem;
+            position: sticky;
+            bottom: 0;
+            width: 100%;
+            box-sizing: border-box;
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .input-bar input {
+            flex-grow: 1;
+            background-color: transparent;
+            border: none;
+            outline: none;
+            color: #e0e0e0;
+            padding: 0.75rem 0.5rem;
+            font-size: 1.1rem;
+            line-height: 1.5rem;
+            -webkit-appearance: none;
+        }
+
+        .input-bar input::placeholder {
+            color: #a0a0a0;
+        }
+
+        .input-bar button {
+            background: none;
+            border: none;
+            color: #b0b0b0;
+            font-size: 1.5rem;
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .input-bar button:hover {
+            color: #e0e0e0;
+        }
+
+        /* Results Styling */
+        .result-box {
+            background-color: #1a1a1a;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem; /* Use margin-bottom for standard stacking */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            max-width: 90%;
+        }
+
+        /* Adjust alignment for user messages */
+        .result-box.self-end {
+            background-color: #333333; /* Darker background for user message */
+        }
+
+        .result-box h3 {
+            color: #8c82ff;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-box p, .result-box li {
+            color: #d0d0d0;
+            line-height: 1.6;
+        }
+        
+        /* Ensure proper list rendering */
+        .result-box ul {
+            list-style-type: disc;
+            padding-left: 1.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .citation-item {
+            background-color: #2a2a2a;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            display: block;
+            text-decoration: none;
+            transition: background-color 0.2s ease;
+        }
+
+        .citation-item:hover {
+            background-color: #3a3a3a;
+        }
+
+        .citation-item span {
+            color: #a0a0ff;
+        }
+
+        .citation-item p {
+            color: #b0b0b0;
+            font-size: 0.85rem;
+        }
+
+        .loading-spinner {
+            border-color: #8c82ff transparent transparent transparent;
+        }
+        
+        /* Initial message centering */
+        #searchResults {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1; /* Allows it to take up available space */
+            justify-content: flex-end; /* Pushes the initial message to the bottom when chat is empty */
+        }
+        #searchResults .initial-message {
+            margin-bottom: 40vh; /* Approximate centering when empty */
+            text-align: center;
+            width: 100%;
+        }
+        
+
+        /* --- Side Menu Styles --- */
+        .side-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 80%; /* Takes 80% of screen width */
+            max-width: 300px;
+            height: 100%;
+            background-color: #111111;
+            z-index: 50;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease-out;
+            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.5);
+            padding: 1.5rem;
+        }
+
+        .side-menu.open {
+            transform: translateX(0);
+        }
+
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 40;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease-out;
+        }
+        
+        .menu-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* --- About Modal Styles (New) --- */
+        .about-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 100;
+            display: none; /* Hidden by default */
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .about-modal-overlay.active {
+            display: flex;
+        }
+
+        .about-modal-content {
+            background-color: #1a1a1a;
+            border-radius: 1rem;
+            padding: 2rem;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 5px 20px rgba(140, 130, 255, 0.3);
+            text-align: center;
+            transform: translateY(-50px);
+            opacity: 0;
+            transition: all 0.3s ease-out;
+        }
+        
+        .about-modal-overlay.active .about-modal-content {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .profile-image {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 4px solid #8c82ff;
+            margin: 0 auto 1.5rem;
+            box-shadow: 0 0 10px rgba(140, 130, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    
+
+<script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-dark': '#8c82ff',
+                        'secondary-dark': '#6ee7b7',
+                        'accent-dark': '#60a5fa',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- About Modal (New) -->
+    <div id="aboutModalOverlay" class="about-modal-overlay" onclick="hideAboutUsModal()">
+        <div class="about-modal-content" onclick="event.stopPropagation()">
+            <!-- Image (Placeholder for 17616.jpg) -->
+            <img src="https://placehold.co/150x150/8c82ff/ffffff?text=KK" 
+                 onerror="this.onerror=null;this.src='https://placehold.co/150x150/8c82ff/ffffff?text=KK'" 
+                 alt="Profile Image for KING KRISH" 
+                 class="profile-image"/>
+
+            <!-- Name -->
+            <h3 class="text-3xl font-extrabold text-white mb-1">KING KRISH</h3>
+            
+            <!-- Occupation -->
+            <p class="text-lg font-medium text-gray-400">Student, C3B</p>
+
+            <button onclick="hideAboutUsModal()"
+                    class="mt-6 w-full py-2 bg-primary-dark text-white rounded-full font-semibold hover:bg-opacity-90 transition">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <!-- Side Menu -->
+    <div id="menuOverlay" class="menu-overlay" onclick="toggleMenu()"></div>
+    <div id="sideMenu" class="side-menu">
+        <h2 class="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">Menu</h2>
+
+        <!-- New Chat Button -->
+        <button onclick="startNewChat();"
+                class="w-full text-left flex items-center p-3 rounded-lg text-lg font-medium text-primary-dark hover:bg-gray-800 transition mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6 mr-3">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            New Chat
+        </button>
+        
+        <!-- About Us Button (New) -->
+        <button onclick="showAboutUsModal();"
+                class="w-full text-left flex items-center p-3 rounded-lg text-lg font-medium text-white hover:bg-gray-800 transition mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6 mr-3">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063 0l.041.02a.75.75 0 0 1 1.063 0l.041-.02a.75.75 0 0 1 1.063 0l.041.02c.07.03.14.07.21.11L18 15.75m-11.25-3a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM12 4.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z" />
+            </svg>
+            About Us
+        </button>
+
+
+        <!-- Language Selector -->
+        <div class="mb-4">
+            <label for="languageSelect" class="block text-sm font-medium text-gray-400 mb-2">Search Language</label>
+            <select id="languageSelect" onchange="saveLanguagePreference(this.value)"
+                    class="w-full p-3 border border-gray-700 rounded-lg bg-gray-900 text-gray-200 focus:ring-primary-dark focus:border-primary-dark outline-none transition duration-150">
+                <option value="en-US">English (en-US)</option>
+                <option value="es-US">Spanish (es-US)</option>
+                <option value="ja-JP">Japanese (ja-JP)</option>
+                <option value="fr-FR">French (fr-FR)</option>
+                <option value="de-DE">German (de-DE)</option>
+            </select>
+        </div>
+
+        <p class="text-xs text-gray-600 mt-8">AI Grounded Search Interface</p>
+    </div>
+
+    <!-- Main App Content -->
+    <div class="flex flex-col flex-grow">
+        <div class="top-bar relative">
+            <!-- Hamburger Menu Button (Left) -->
+            <button class="text-white z-10 w-7 h-7 flex items-center justify-center" onclick="toggleMenu()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-7 h-7">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+            </button>
+            
+            <!-- Centered Title -->
+            <h1 class="text-2xl font-bold text-primary-dark absolute left-1/2 transform -translate-x-1/2 z-0">Krish</h1>
+
+            <!-- Placeholder for right-side alignment (same size as button) -->
+            <div class="w-7 h-7"></div>
+        </div>
+
+        <div class="content-area" id="resultsContainer">
+            <div id="searchResults">
+                <p class="initial-message text-xl text-gray-600">Ask anything...</p>
+            </div>
+            <!-- Loading indicator is now inside the content area and uses the new "thinking" text -->
+            <div id="loadingIndicator" class="hidden text-center py-4">
+                <div class="animate-spin inline-block w-6 h-6 border-2 border-t-2 rounded-full loading-spinner mr-2"></div>
+                <p class="text-md text-gray-400 inline">Krish is thinking...</p>
+            </div>
+        </div>
+
+        <div class="input-bar">
+            <button id="addAttachmentButton" title="Add attachment">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+            </button>
+            <input type="text" id="searchInput" placeholder="Ask Krish"
+                   onkeydown="if(event.key === 'Enter') handleSearchClick()">
+            <button onclick="handleSearchClick()" id="searchButton" title="Send message">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                    <path d="M7.493 18.77c-.501 0-.96-.312-1.125-.794a1.137 1.137 0 0 1 0-1.033l.97-3.034a1.136 1.136 0 0 0-.17-.92L3.89 9.1a1.136 1.136 0 0 1 0-1.437l2.4-2.822c.24-.282.59-.444.97-.444H18.75c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125H7.493Z" />
+                </svg>
+            </button>
+            <button id="microphoneButton" title="Voice input">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                    <path d="M8.25 4.5a.75.75 0 0 1 .75-.75h6a.75.75 0 0 1 .75.75v.75c0 .096-.06.19-.17.243L15 6.252a1.5 1.5 0 0 1-.872 1.528 12.554 12.554 0 0 0-4.698 1.123 1.5 1.5 0 0 1-.956-.372L7.5 7.567V4.5ZM12 10.375a3.375 3.375 0 1 0 0 6.75 3.375 3.375 0 0 0 0-6.75Z" />
+                    <path fill-rule="evenodd" d="M6 15.75c0-1.04.113-2.052.323-3.033.097-.463.559-.727 1.015-.636A6.974 6.974 0 0 1 12 13.875c2.316 0 4.47-.65 6.162-1.774.457-.293 1.015-.029 1.015.636.21.981.323 1.993.323 3.033 0 3.86-2.946 7-6.75 7-3.804 0-6.75-3.14-6.75-7Z" clip-rule="evenodd" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    
+
+<script>
+        // --- Global Variables/Constants ---
+        const MODEL_NAME = "gemini-2.5-flash-preview-09-2025";
+        const API_URL_BASE = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent`;
+        const apiKey = ""; 
+        const DEFAULT_LANGUAGE = 'en-US';
+
+        /**
+         * Initializes the application state, loads language preference.
+         */
+        function initializeApplication() {
+            // Load and set the language preference from localStorage
+            const savedLang = localStorage.getItem('searchLanguage') || DEFAULT_LANGUAGE;
+            const langSelect = document.getElementById('languageSelect');
+            if (langSelect) {
+                langSelect.value = savedLang;
+            }
+        }
+
+        /**
+         * Toggles the visibility of the side menu and overlay.
+         */
+        function toggleMenu() {
+            const menu = document.getElementById('sideMenu');
+            const overlay = document.getElementById('menuOverlay');
+            menu.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
+        
+        /**
+         * Displays the About Us modal. Closes the side menu first.
+         */
+        function showAboutUsModal() {
+            toggleMenu(); // Close the side menu
+            const modal = document.getElementById('aboutModalOverlay');
+            setTimeout(() => {
+                 modal.classList.add('active');
+            }, 50); // Small delay to ensure menu closes first
+        }
+
+        /**
+         * Hides the About Us modal.
+         */
+        function hideAboutUsModal() {
+            const modal = document.getElementById('aboutModalOverlay');
+            modal.classList.remove('active');
+        }
+
+        /**
+         * Clears the current conversation results.
+         */
+        function startNewChat() {
+            const searchResultsDiv = document.getElementById('searchResults');
+            // Reset to the initial message state
+            searchResultsDiv.innerHTML = '<p class="initial-message text-xl text-gray-600">Ask anything...</p>';
+            document.getElementById('searchInput').value = '';
+            // Hide the menu after starting new chat
+            toggleMenu();
+        }
+
+        /**
+         * Saves the selected language to local storage.
+         * @param {string} langCode 
+         */
+        function saveLanguagePreference(langCode) {
+            localStorage.setItem('searchLanguage', langCode);
+            // Optionally notify user
+            console.log(`Search language set to: ${langCode}`);
+        }
+
+        /**
+         * Converts Markdown text (like the model response) to HTML for display.
+         * Improved to handle lists and paragraphs more robustly.
+         */
+        function markdownToHtml(markdownText) {
+            // 1. Handle bold text
+            let html = markdownText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+            const lines = html.split('\n');
+            let output = '';
+            let inList = false;
+
+            lines.forEach(line => {
+                const trimmedLine = line.trim();
+
+                if (trimmedLine.startsWith('- ')) {
+                    if (!inList) {
+                        output += '<ul>';
+                        inList = true;
+                    }
+                    // Extract content after '- '
+                    output += `<li>${trimmedLine.substring(2).trim()}</li>`;
+                } else if (trimmedLine === '') {
+                    // Treat empty line as paragraph separator, only if not inside a list
+                    if (inList) {
+                        output += '</ul>';
+                        inList = false;
+                    }
+                } else {
+                    // Standard paragraph content
+                    if (inList) {
+                        output += '</ul>';
+                        inList = false;
+                    }
+                    output += `<p>${trimmedLine}</p>`;
+                }
+            });
+
+            // Close any final open list
+            if (inList) {
+                output += '</ul>';
+            }
+
+            return output;
+        }
+
+
+        /**
+         * Retries a fetch request with exponential backoff.
+         */
+        async function fetchWithBackoff(url, options, maxRetries = 5) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.status !== 429 && response.ok) {
+                        return response;
+                    } else if (response.status === 429 && i < maxRetries - 1) {
+                        const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        console.warn(`Rate limit encountered. Retrying in ${Math.round(delay / 1000)}s...`);
+                    } else {
+                        throw new Error(`API request failed with status: ${response.statusText || response.status}`);
+                    }
+                } catch (error) {
+                    if (i < maxRetries - 1) {
+                        const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        console.error(`Fetch error. Retrying in ${Math.round(delay / 1000)}s...`);
+                    } else {
+                        throw error;
+                    }
+                }
+            }
+        }
+
+        /**
+         * Main function to handle the search process.
+         */
+        async function handleSearchClick() {
+            const query = document.getElementById('searchInput').value.trim();
+            const selectedLanguage = document.getElementById('languageSelect').value || DEFAULT_LANGUAGE;
+            const searchResultsDiv = document.getElementById('searchResults');
+            const resultsContainer = document.getElementById('resultsContainer');
+            const loadingDiv = document.getElementById('loadingIndicator');
+            const searchButton = document.getElementById('searchButton');
+            
+            if (!query) {
+                // If there's an initial message, just exit. If there are results, show error.
+                if (!document.querySelector('.initial-message')) {
+                    const errorBox = document.createElement('div');
+                    errorBox.className = 'result-box max-w-full lg:max-w-xl self-start text-center text-red-500 mt-4';
+                    errorBox.textContent = 'Please enter a search query.';
+                    searchResultsDiv.insertAdjacentElement('beforeend', errorBox);
+                }
+                return;
+            }
+
+            // Remove initial message if present
+            const initialMessage = document.querySelector('.initial-message');
+            if (initialMessage) initialMessage.remove();
+
+            // --- UI State: Loading ---
+            loadingDiv.classList.remove('hidden');
+            searchButton.disabled = true;
+            searchButton.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 animate-pulse">
+                    <path d="M7.493 18.77c-.501 0-.96-.312-1.125-.794a1.137 1.137 0 0 1 0-1.033l.97-3.034a1.136 1.136 0 0 0-.17-.92L3.89 9.1a1.136 1.136 0 0 1 0-1.437l2.4-2.822c.24-.282.59-.444.97-.444H18.75c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125H7.493Z" />
+                    </svg>
+            `; 
+
+            try {
+                const apiUrl = `${API_URL_BASE}?key=${apiKey}`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: query }] }],
+                    tools: [{ 
+                        "google_search": {
+                            // Language Filtering implementation
+                            'languageCode': selectedLanguage 
+                        } 
+                    }], 
+                    systemInstruction: {
+                        parts: [{ text: `You are a concise, helpful AI assistant. Provide a brief answer to the user's query, relying strictly on your search results. Respond in the language associated with the code ${selectedLanguage}. Use markdown for formatting.` }]
+                    },
+                };
+
+                const response = await fetchWithBackoff(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                
+                // Process the result
+                const candidate = result.candidates?.[0];
+                let generatedText = `Sorry, I couldn't find a definitive answer for that query in the requested language.`;
+                let sources = [];
+
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    generatedText = candidate.content.parts[0].text;
+                }
+
+                const groundingMetadata = candidate?.groundingMetadata;
+                if (groundingMetadata && groundingMetadata.groundingAttributions) {
+                    sources = groundingMetadata.groundingAttributions
+                        .map(attribution => ({
+                            uri: attribution.web?.uri,
+                            title: attribution.web?.title,
+                        }))
+                        .filter(source => source.uri && source.title); 
+                }
+                
+                // --- UI State: Display Results ---
+                
+                // 1. User Query (Self-end/right aligned)
+                const userQueryHtml = `
+                    <div class="result-box max-w-full lg:max-w-xl self-end text-right bg-gray-800 border border-gray-700">
+                        <p class="text-gray-300 font-medium">${query}</p>
+                    </div>
+                `;
+                searchResultsDiv.insertAdjacentHTML('beforeend', userQueryHtml);
+
+                // 2. AI Response (Self-start/left aligned)
+                // Removed "AI Response:" header as requested.
+                const answerHtml = `
+                    <div class="result-box max-w-full lg:max-w-xl self-start">
+                        <div class="text-base">
+                            ${markdownToHtml(generatedText)}
+                        </div>
+                    </div>
+                `;
+                searchResultsDiv.insertAdjacentHTML('beforeend', answerHtml);
+                
+                // 3. Sources (Self-start/left aligned)
+                let sourcesHtml = '';
+                if (sources.length > 0) {
+                    const sourceList = sources.map((source, index) => `
+                        <a href="${source.uri}" target="_blank" rel="noopener noreferrer" class="citation-item">
+                            <span class="text-xs font-mono">${index + 1}.</span>
+                            <span class="text-sm font-semibold">${source.title}</span>
+                            <p class="text-xs truncate">${source.uri}</p>
+                        </a>
+                    `).join('');
+
+                    sourcesHtml = `
+                        <div class="result-box mb-4 max-w-full lg:max-w-xl self-start">
+                            <h3 class="text-lg">Sources:</h3>
+                            <div class="space-y-1">
+                                ${sourceList}
+                            </div>
+                        </div>
+                    `;
+                    searchResultsDiv.insertAdjacentHTML('beforeend', sourcesHtml);
+                }
+
+                // Clear the input after search
+                document.getElementById('searchInput').value = '';
+
+                // Scroll to the bottom to view the new message
+                resultsContainer.scrollTop = resultsContainer.scrollHeight;
+
+
+            } catch (error) {
+                console.error("Search failed:", error);
+                searchResultsDiv.insertAdjacentHTML('beforeend', `
+                    <div class="result-box max-w-full lg:max-w-xl self-start text-center text-red-500 mt-4">
+                        <p>An error occurred while fetching the search results. Please check the console for details.</p>
+                    </div>`);
+            } finally {
+                // --- UI State: Complete ---
+                loadingDiv.classList.add('hidden');
+                searchButton.disabled = false;
+                searchButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                        <path d="M7.493 18.77c-.501 0-.96-.312-1.125-.794a1.137 1.137 0 0 1 0-1.033l.97-3.034a1.136 1.136 0 0 0-.17-.92L3.89 9.1a1.136 1.136 0 0 1 0-1.437l2.4-2.822c.24-.282.59-.444.97-.444H18.75c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125H7.493Z" />
+                    </svg>
+                `; 
+            }
+        }
+
+        // Initialize on load
+        window.onload = initializeApplication;
+    </script>
+</body>
+</html>
+
