@@ -3,338 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KRISH - Welcome</title>
-    <!-- Load Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
-    <!-- Configure Tailwind for Inter Font --><style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+    <title>Krish - My AI Assistant</title>
+    <!-- Simplified Tailwind for layout, custom CSS for "hand-written" feel -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&display=swap');
+        
+        :root {
+            --bg-main: #0a0a0c;
+            --bg-card: #141417;
+            --accent: #f59e0b; /* Amber accent */
+            --text-main: #e2e8f0;
+            --text-dim: #94a3b8;
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
-            background: radial-gradient(circle at center, rgba(17, 24, 39, 1) 0%, rgba(0, 0, 0, 1) 100%);
-            min-height: 100vh; 
-        }
-        .selection-panel {
-            background-color: #1f2937; 
-            border: 2px solid #374151;
-            border-radius: 1rem; 
-            padding: 1.5rem;
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5); 
-        }
-        .feature-card {
-            background-color: #111827; 
-            border-radius: 0.75rem;
-            padding: 2rem 1rem;
-            margin-bottom: 1rem; 
-            height: 100%; 
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-        @media (min-width: 640px) {
-            .feature-card {
-                margin-bottom: 0;
-            }
-        }
-        .feature-card:hover {
-            transform: translateY(-8px);
-        }
-        
-        /* Specific Glow effects for the two sides */
-        .glow-border-purple:hover {
-            box-shadow: 0 0 25px rgba(167, 139, 250, 0.9);
-        }
-        /* Changed glow to silver/gray for the AI card */
-        .glow-border-silver:hover { 
-            box-shadow: 0 0 25px rgba(180, 180, 180, 0.9); /* Lighter silver glow */
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
         }
 
-        /* Styling for the Central Divider (Lightning Bolt) */
-        .lightning-divider {
+        .chat-area {
+            height: calc(100vh - 180px);
+            scrollbar-width: thin;
+            scrollbar-color: #2d2d33 transparent;
+        }
+
+        /* Custom bubble styles to look more "personal project" style */
+        .bubble {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            line-height: 1.6;
             position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            padding: 0 1rem;
-        }
-        .lightning-divider::before,
-        .lightning-divider::after {
-            content: '';
-            position: absolute;
-            width: 3px;
-            /* Changed lightning divider gradient to blend purple and silver */
-            background: linear-gradient(to bottom, #a78bfa, #b4b4b4); 
-        }
-        .lightning-divider::before {
-            top: 0;
-            height: 45%;
-        }
-        .lightning-divider::after {
-            bottom: 0;
-            height: 45%;
-        }
-        
-        /* --- Transition Screen Styles --- */
-        #transition-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 1); /* Solid black background */
-            display: none; /* Hidden by default */
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
         }
 
-        @keyframes zoom-pulse {
-            0% { transform: scale(1); opacity: 0; }
-            50% { transform: scale(1.5); opacity: 1; }
-            100% { transform: scale(1); opacity: 0; }
+        .bubble-bot {
+            background: var(--bg-card);
+            border: 1px solid #2d2d33;
+            border-top-left-radius: 2px;
         }
 
-        .animated-logo {
-            animation: zoom-pulse 4s ease-in-out forwards;
-            font-size: 8rem; /* Large text */
-            font-weight: 900;
-            letter-spacing: 0.5rem;
-            color: #8b5cf6; /* Indigo/Purple color */
+        .bubble-user {
+            background: var(--accent);
+            color: #000;
+            font-weight: 500;
+            border-top-right-radius: 2px;
+        }
+
+        .typing-indicator span {
+            width: 5px;
+            height: 5px;
+            background: var(--accent);
+            display: inline-block;
+            border-radius: 50%;
+            margin-right: 3px;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .input-box {
+            background: #1a1a1e;
+            border: 1px solid #2d2d33;
+            transition: all 0.2s;
+        }
+
+        .input-box:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px var(--accent);
         }
     </style>
 </head>
-<body class="text-white antialiased flex flex-col min-h-screen">
-    
-    <!-- FULL SCREEN TRANSITION OVERLAY --><div id="transition-screen">
-        <div class="animated-logo">KRISH</div>
+<body class="flex flex-col items-center min-h-screen p-4">
+
+    <div class="w-full max-w-xl flex flex-col h-full">
+        <!-- Minimal Header -->
+        <header class="flex items-center justify-between mb-6 px-2">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded bg-amber-500 flex items-center justify-center text-black font-bold">K</div>
+                <h1 class="text-xl font-bold tracking-tight">KRISH<span class="text-amber-500">_</span></h1>
+            </div>
+            <button id="reset-btn" class="text-xs uppercase tracking-widest text-slate-500 hover:text-amber-500 transition-colors">
+                [ Reset ]
+            </button>
+        </header>
+
+        <!-- Main Chat Frame -->
+        <main id="chat-window" class="chat-area overflow-y-auto space-y-6 mb-4 px-2">
+            <!-- Content generated by JS -->
+        </main>
+
+        <!-- Input Bar -->
+        <footer class="mt-auto">
+            <form id="chat-form" class="flex gap-2">
+                <div class="input-box flex-1 flex items-center px-4 py-1 rounded-lg">
+                    <input 
+                        type="text" 
+                        id="user-input" 
+                        placeholder="Say something..." 
+                        class="w-full bg-transparent py-2 outline-none text-sm placeholder-slate-600"
+                        autocomplete="off"
+                    >
+                </div>
+                <button 
+                    type="submit" 
+                    id="send-btn"
+                    class="bg-amber-500 hover:bg-amber-400 text-black font-bold px-5 py-2 rounded-lg transition-transform active:scale-95 text-sm"
+                >
+                    SEND
+                </button>
+            </form>
+        </footer>
     </div>
 
-    <!-- Header / Navigation Bar --><header class="p-6 md:p-8">
-        <nav class="flex justify-between items-center max-w-7xl mx-auto">
-            
-            <!-- Logo (Top Left) --><div class="flex-shrink-0">
-                <a href="#" class="text-3xl font-extrabold tracking-widest text-indigo-400">KRISH</a>
-            </div>
-
-            <!-- Navigation Links (Top Center to Top Right) --><div class="flex items-center space-x-4">
-
-                <!-- Home Link (Styled as a Button) --><a 
-                    href="#"
-                    id="home-button"
-                    class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50"
-                >
-                    Home
-                </a>
-
-                <!-- Settings Dropdown Container --><div class="relative">
-                    <!-- Three Dots Settings Button --><button 
-                        id="settings-button" 
-                        aria-expanded="false" 
-                        aria-controls="settings-menu"
-                        class="p-2 rounded-full hover:bg-gray-800 transition duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                        <!-- Vertical Ellipsis Icon (Three Dots) --><svg class="w-6 h-6 text-gray-300" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 13a1 1 0 100-2 1 1 0 000 2zM12 6a1 1 0 100-2 1 1 0 000 2zM12 20a1 1 0 100-2 1 1 0 000 2z"/>
-                        </svg>
-                    </button>
-
-                    <!-- Dropdown Menu --><div 
-                        id="settings-menu" 
-                        class="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl py-2 z-10 opacity-0 transition-opacity duration-200 pointer-events-none"
-                    >
-                        <!-- The small 'about us' button --><a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-indigo-600 hover:text-white transition duration-200">
-                            About Us
-                        </a>
-                        <!-- Added 'Features' back in the menu for future use --><a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-indigo-600 hover:text-white transition duration-200">
-                            Features
-                        </a>
-                    </div>
-                </div>
-                
-            </div>
-        </nav>
-    </header>
-
-    <!-- Main Content: Container for both views --><main class="flex-grow flex items-center justify-center p-4 relative overflow-y-auto">
-        
-        <!-- 1. LANDING PAGE VIEW (Visible by Default) --><div id="landing-view" class="view-transition text-center max-w-3xl opacity-100">
-            <h1 class="text-4xl md:text-6xl font-bold mb-4 leading-tight">
-                "The future belongs to those who believe in the beauty of their dreams."
-            </h1>
-            <p class="text-xl md:text-2xl text-indigo-400 font-light">
-                — Eleanor Roosevelt
-            </p>
-        </div>
-
-        <!-- 2. FEATURES SELECTION VIEW (Hidden by Default) --><div id="features-view" class="view-transition absolute inset-0 flex items-center justify-center p-4 opacity-0 pointer-events-none">
-            <div class="selection-panel max-w-2xl w-full text-center relative">
-                
-                <!-- Close Button (Triggers view switch back to landing) --><button id="close-features-button" class="absolute top-4 right-4 text-gray-500 hover:text-white transition duration-200 text-2xl font-bold z-10">
-                    &times;
-                </button>
-
-                <!-- Title --><h1 class="text-3xl md:text-5xl font-extrabold mb-8 text-white tracking-wide">
-                    OUR FEATURES
-                </h1>
-                
-                <!-- Feedback Message Container --><div id="feedback-message" class="text-sm text-orange-400 mb-4 h-5"></div>
-
-                <!-- Feature Selection Area: Now uses sm:flex-row to enable side-by-side sooner --><div class="flex flex-col sm:flex-row items-stretch justify-center md:gap-0">
-                    
-                    <!-- KRISH CHAT SPOT Card (Purple Side) --><div class="feature-card flex-1 glow-border-purple">
-                        <div class="flex flex-col items-center">
-                            <h2 class="text-xl md:text-2xl font-bold mb-6 uppercase tracking-wider text-purple-400">KRISH CHAT SPOT</h2>
-                            <!-- Placeholder image for chat spot icon --><img src="https://placehold.co/180x180/4F46E5/FFFFFF?text=CHAT" alt="KRISH Chat Spot Icon" class="rounded-full w-36 h-36 md:w-48 md:h-48 object-cover mb-6 ring-4 ring-purple-500/50 shadow-lg transition duration-300 hover:ring-purple-400">
-                            <p class="text-gray-400 text-sm mb-6">Connect, converse, and share instantly with the community.</p>
-                        </div>
-                        
-                        <!-- Changed back to button to control transition/redirection --><button 
-                            id="use-chat-spot"
-                            data-external-url="https://1karthikthebest.github.io/Krish/"
-                            data-feature="KRISH CHAT SPOT"
-                            class="use-button w-full px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-xl transition duration-300 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50 text-lg"
-                        >
-                            Use
-                        </button>
-                    </div>
-
-                    <!-- Lightning Divider (Visible on screens 640px and wider) --><div class="hidden sm:flex lightning-divider">
-                        <!-- Updated lightning bolt icon color to match gradient --><div class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-purple-500 to-gray-400 mx-2 z-10">⚡</div>
-                    </div>
-                    
-                    <!-- KRISH AI Card (Silver/Gray Side) --><div class="feature-card flex-1 glow-border-silver">
-                        <div class="flex flex-col items-center">
-                            <h2 class="text-xl md:text-2xl font-bold mb-6 uppercase tracking-wider text-gray-300">KRISH AI</h2>
-                            <!-- Placeholder image for AI icon --><img src="https://placehold.co/180x180/6B7280/111827?text=AI" alt="KRISH AI Icon" class="rounded-full w-36 h-36 md:w-48 md:h-48 object-cover mb-6 ring-4 ring-gray-400/50 shadow-lg transition duration-300 hover:ring-gray-300">
-                            <p class="text-gray-400 text-sm mb-6">Harness powerful artificial intelligence for creativity and answers.</p>
-                        </div>
-                        
-                        <button 
-                            id="use-krish-ai"
-                            data-feature="KRISH AI"
-                            class="use-button w-full px-8 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg shadow-xl transition duration-300 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-gray-500 focus:ring-opacity-50 text-lg"
-                        >
-                            Use
-                        </button>
-                    </div>
-                </div>
-                
-            </div>
-        </div>
-
-    </main>
-
-    <!-- Footer (Optional but good practice) --><footer class="p-4 text-center text-gray-500 text-sm">
-        &copy; 2025 KRISH. All rights reserved.
-    </footer>
-
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const settingsButton = document.getElementById('settings-button');
-            const settingsMenu = document.getElementById('settings-menu');
-            const homeButton = document.getElementById('home-button');
-            const closeFeaturesButton = document.getElementById('close-features-button');
-            const landingView = document.getElementById('landing-view');
-            const featuresView = document.getElementById('features-view');
+        const chatWindow = document.getElementById('chat-window');
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const resetBtn = document.getElementById('reset-btn');
+
+        // Added your API key here
+        const apiKey = "AIzaSyA86bFvbglr0feAC-eWjhLnxWFg1v94Z4o"; 
+        const KRISH_IDENTITY = "You are Krish, a minimal AI chatbot. You're clever, brief, and you remember context. If a user follows up on a previous thought, merge the topics naturally.";
+
+        let conversation = [];
+
+        // Helper: Create message element
+        function createMsgUI(text, isBot = true) {
+            const container = document.createElement('div');
+            container.className = `flex ${isBot ? 'justify-start' : 'justify-end'}`;
             
-            // New Elements for Transition Screen
-            const useChatSpotButton = document.getElementById('use-chat-spot');
-            const useKrishAiButton = document.getElementById('use-krish-ai');
-            const transitionScreen = document.getElementById('transition-screen');
-
-            const feedbackMessage = document.getElementById('feedback-message');
+            const msg = document.createElement('div');
+            msg.className = `bubble ${isBot ? 'bubble-bot' : 'bubble-user'}`;
+            msg.textContent = text;
             
-            // --- View Switching Logic (No change) ---
-            const showView = (viewId) => {
-                const targetView = viewId === 'features' ? featuresView : landingView;
-                const otherView = viewId === 'features' ? landingView : featuresView;
+            container.appendChild(msg);
+            chatWindow.appendChild(container);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
 
-                // Hide other view
-                otherView.classList.add('opacity-0', 'pointer-events-none', 'hidden');
-                
-                // Show target view after transition
-                targetView.classList.remove('hidden');
-                
-                // Trigger the fade-in
-                setTimeout(() => {
-                    targetView.classList.remove('opacity-0', 'pointer-events-none');
-                }, 50);
-            };
-
-            // Initial state check (Ensuring the landing view is properly set on load)
-            landingView.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
-            featuresView.classList.add('hidden', 'opacity-0', 'pointer-events-none');
-
-
-            // Event Listeners for View Switching
-            homeButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                showView('features');
-            });
-
-            closeFeaturesButton.addEventListener('click', () => {
-                showView('landing');
-            });
-
-
-            // --- Feature Button Functionality ---
-
-            // KRISH CHAT SPOT (With Transition)
-            useChatSpotButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                const externalUrl = useChatSpotButton.dataset.externalUrl;
-                
-                // 1. Show the transition screen
-                transitionScreen.style.display = 'flex';
-                
-                // 2. Wait for the animation (4000ms for 4 seconds)
-                setTimeout(() => {
-                    // 3. Redirect to the external URL
-                    window.open(externalUrl, '_blank');
-                    
-                    // 4. Hide the transition screen after redirecting
-                    transitionScreen.style.display = 'none';
-                    
-                }, 4000); 
-            });
-
-
-            // KRISH AI (Coming Soon Message)
-            useKrishAiButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                console.log(`User attempted to use KRISH AI`);
-                
-                // Display the "Coming Soon" message
-                feedbackMessage.textContent = `KRISH AI: Coming Soon!`;
-                setTimeout(() => {
-                    feedbackMessage.textContent = '';
-                }, 5000); // Display for 5 seconds
-            });
-
-            // Settings Menu Toggle (No change)
-            function toggleMenu() {
-                const isHidden = settingsMenu.classList.toggle('opacity-0');
-                settingsButton.setAttribute('aria-expanded', isHidden ? 'false' : 'true');
-                if (isHidden) {
-                    settingsMenu.classList.add('pointer-events-none');
-                } else {
-                    settingsMenu.classList.remove('pointer-events-none');
-                }
+        // Helper: Typing animation
+        function toggleTyping(show) {
+            const existing = document.getElementById('typing-ui');
+            if (show && !existing) {
+                const ui = document.createElement('div');
+                ui.id = 'typing-ui';
+                ui.className = 'flex justify-start';
+                ui.innerHTML = `<div class="bubble bubble-bot typing-indicator"><span></span><span></span><span></span></div>`;
+                chatWindow.appendChild(ui);
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            } else if (!show && existing) {
+                existing.remove();
             }
+        }
 
-            settingsButton.addEventListener('click', toggleMenu);
+        // The AI Logic
+        async function askKrish(msg) {
+            // Add user message to memory
+            conversation.push({ role: 'user', parts: [{ text: msg }] });
+            
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: conversation,
+                        systemInstruction: { parts: [{ text: KRISH_IDENTITY }] }
+                    })
+                });
 
-            document.addEventListener('click', (event) => {
-                if (!settingsButton.contains(event.target) && !settingsMenu.contains(event.target)) {
-                    settingsMenu.classList.add('opacity-0', 'pointer-events-none');
-                    settingsButton.setAttribute('aria-expanded', 'false');
-                }
-            });
-        });
+                if (!res.ok) throw new Error();
+
+                const data = await res.json();
+                const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm offline.";
+                
+                // Add bot message to memory
+                conversation.push({ role: 'model', parts: [{ text: reply }] });
+                return reply;
+
+            } catch (err) {
+                return "Error connecting to my brain. Try again?";
+            }
+        }
+
+        // Form Handling
+        chatForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const val = userInput.value.trim();
+            if (!val) return;
+
+            createMsgUI(val, false);
+            userInput.value = '';
+            userInput.disabled = true;
+
+            toggleTyping(true);
+            const reply = await askKrish(val);
+            toggleTyping(false);
+
+            createMsgUI(reply, true);
+            userInput.disabled = false;
+            userInput.focus();
+        };
+
+        // Reset Logic
+        resetBtn.onclick = () => {
+            chatWindow.innerHTML = '';
+            conversation = [];
+            createMsgUI("Memory cleared. I'm Krish—what's on your mind?", true);
+        };
+
+        // Initialize
+        window.onload = () => {
+            createMsgUI("I'm Krish. I've got memory of our chat, so go ahead.", true);
+        };
     </script>
-
 </body>
 </html>
-
 
